@@ -43,4 +43,30 @@ public class AsyncConfig {
 
         return executor;
     }
+
+    /**
+     * 뉴스 프로세서 전용 스레드 풀 (SQS 리스너 시뮬레이션)
+     *
+     * 큐에서 뉴스 ID를 가져와서 브로드캐스트 처리
+     * 실제 SQS의 멀티 스레드 메시지 처리 시뮬레이션
+     *
+     * @return executor
+     */
+    @Bean("newsProcessorExecutor")
+    public Executor newsProcessorExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(30);
+        executor.setThreadNamePrefix("newsProcessorExecutor-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(10);
+        executor.initialize();
+
+        log.info("뉴스 프로세서용 스레드 풀 초기화: Core={}, Max={}. Queue={}",
+                executor.getCorePoolSize(), executor.getMaxPoolSize(), executor.getQueueCapacity());
+
+        return executor;
+    }
 }
