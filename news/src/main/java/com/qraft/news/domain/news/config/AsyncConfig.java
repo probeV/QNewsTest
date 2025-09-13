@@ -31,8 +31,8 @@ public class AsyncConfig {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
 
         executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(5);     // 뉴스 생성 스레드 5개로 고정
-        executor.setQueueCapacity(0);   // 스레드 개수 고정 -> 큐 사용 x
+        executor.setMaxPoolSize(10);     // 뉴스 생성 스레드 5개로 고정
+        executor.setQueueCapacity(50);   // 스레드 개수 고정 -> 큐 사용 x
         executor.setThreadNamePrefix("newsGeneratorExecutor-");
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(10);
