@@ -33,7 +33,7 @@ public interface NewsService {
      * @param newsId 조회할 뉴스의 고유 ID
      * @return 뉴스 상세 정보 DTO, 존재하지 않으면 null
      */
-    public NewsResponseDto getNews(String newsId);
+    public NewsResponseDto getNews(String newsId) throws Exception;
 
     /**
      * 특정 뉴스 ID의 뉴스를 모든 WebSocket 클라이언트에게 실시간 전송
