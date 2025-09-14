@@ -2,234 +2,508 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Qraft 뉴스 WebSocket 테스트</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 뉴스 브로드캐스팅 테스트</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .status {
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-weight: bold;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .connected { background-color: #d4edda; color: #155724; }
-        .disconnected { background-color: #f8d7da; color: #721c24; }
-        .connecting { background-color: #fff3cd; color: #856404; }
-        .messages {
-            border: 1px solid #ddd;
-            height: 400px;
-            overflow-y: scroll;
-            padding: 10px;
-            margin: 10px 0;
-            background-color: #f8f9fa;
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
-        .message {
-            margin: 5px 0;
-            padding: 8px;
-            border-left: 3px solid #007bff;
-            background-color: white;
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
-        .message-header {
-            font-weight: bold;
-            color: #007bff;
-            font-size: 0.9em;
+
+        .header {
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
         }
-        .message-body { margin-top: 5px; }
-        .controls { margin: 10px 0; }
-        .controls button {
-            padding: 10px 20px;
-            margin: 5px;
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 0;
+            min-height: 600px;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            padding: 30px;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .news-display {
+            padding: 30px;
+            background: white;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
-        .btn-connect { background-color: #28a745; color: white; }
-        .btn-disconnect { background-color: #dc3545; color: white; }
-        .btn-clear { background-color: #6c757d; color: white; }
-        .stats {
-            background-color: #e9ecef;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-connected {
+            background: #28a745;
+        }
+
+        .status-disconnected {
+            background: #dc3545;
+        }
+
+        .status-connecting {
+            background: #ffc107;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .status-display {
+            background: #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-display h3 {
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .news-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .news-item {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4facfe;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .news-item h4 {
+            color: #343a40;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .news-item p {
+            color: #6c757d;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .news-item .metadata {
+            font-size: 0.9em;
+            color: #adb5bd;
+            border-top: 1px solid #e9ecef;
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+
+        .news-counter {
+            text-align: center;
+            font-size: 1.2em;
+            color: #495057;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .no-news {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 40px 20px;
+        }
+
+        .logs {
+            background: #343a40;
+            color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            height: 150px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+
+        .logs .log-entry {
+            margin-bottom: 5px;
+            word-wrap: break-word;
+        }
+
+        .logs .log-info {
+            color: #17a2b8;
+        }
+
+        .logs .log-error {
+            color: #dc3545;
+        }
+
+        .logs .log-success {
+            color: #28a745;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .control-panel {
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
         }
     </style>
 </head>
 <body>
-<h1>🔔 Qraft 뉴스 실시간 알림 테스트</h1>
+<div class="container">
+    <div class="header">
+        <h1>🚀 실시간 뉴스 브로드캐스팅</h1>
+        <p>WebSocket STOMP 프로토콜을 이용한 실시간 뉴스 수신 테스트</p>
+    </div>
 
-<div id="status" class="status disconnected">🔴 연결 안됨</div>
+    <div class="main-content">
+        <div class="control-panel">
+            <div class="status-display">
+                <h3>연결 상태</h3>
+                <div id="connectionStatus">
+                    <span class="status-indicator status-disconnected"></span>
+                    <span>연결되지 않음</span>
+                </div>
+            </div>
 
-<div class="controls">
-    <button class="btn-connect" onclick="connect()">🔌 연결</button>
-    <button class="btn-disconnect" onclick="disconnect()">❌ 연결 해제</button>
-    <button class="btn-clear" onclick="clearMessages()">🗑️ 메시지 지우기</button>
-</div>
+            <div class="form-group">
+                <label for="customerToken">고객사 토큰</label>
+                <input type="text" id="customerToken" value="test-token-123" placeholder="고객사 인증 토큰">
+            </div>
 
-<div class="stats">
-    <strong>📊 통계:</strong>
-    받은 메시지: <span id="messageCount">0</span>개 |
-    연결 시간: <span id="connectionTime">-</span> |
-    마지막 수신: <span id="lastReceived">-</span>
-</div>
+            <div style="margin-bottom: 20px;">
+                <button id="connectBtn" class="btn btn-primary">🔌 연결하기</button>
+                <button id="disconnectBtn" class="btn btn-danger" disabled>❌ 연결 해제</button>
+            </div>
 
-<div>
-    <h3>📨 받은 뉴스 메시지:</h3>
-    <div id="messages" class="messages">
-        <div style="color: #6c757d; text-align: center; padding: 20px;">
-            아직 받은 메시지가 없습니다. 연결 후 뉴스를 기다려주세요.
+            <div class="form-group">
+                <button id="clearNewsBtn" class="btn btn-primary" style="width: 100%;">🗑️ 뉴스 목록 초기화</button>
+            </div>
+
+            <div class="logs" id="logs">
+                <div class="log-entry log-info">📝 로그 출력 영역</div>
+            </div>
+        </div>
+
+        <div class="news-display">
+            <div class="news-counter" id="newsCounter">받은 뉴스: 0개</div>
+
+            <div class="news-container" id="newsContainer">
+                <div class="no-news">
+                    📡 WebSocket에 연결하면 실시간 뉴스가 여기에 표시됩니다
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    let stompClient = null;
-    let messageCount = 0;
-    let connectionStartTime = null;
+    class NewsWebSocketClient {
+        constructor() {
+            this.stompClient = null;
+            this.connected = false;
+            this.newsCount = 0;
+            this.initializeEventListeners();
+        }
 
-    const statusDiv = document.getElementById('status');
-    const messagesDiv = document.getElementById('messages');
-    const messageCountSpan = document.getElementById('messageCount');
-    const connectionTimeSpan = document.getElementById('connectionTime');
-    const lastReceivedSpan = document.getElementById('lastReceived');
+        initializeEventListeners() {
+            document.getElementById('connectBtn').addEventListener('click', () => this.connect());
+            document.getElementById('disconnectBtn').addEventListener('click', () => this.disconnect());
+            document.getElementById('clearNewsBtn').addEventListener('click', () => this.clearNews());
+        }
 
-    function updateStatus(status, className) {
-        statusDiv.textContent = status;
-        statusDiv.className = 'status ' + className;
-    }
+        connect() {
+            const serverUrl = "http://localhost:8080/ws"
+            const token = document.getElementById('customerToken').value;
 
-    function connect() {
-        console.log('🔄 연결 시도 중...');
-        updateStatus('🟡 연결 중...', 'connecting');
+            if (!serverUrl || !token) {
+                this.addLog('❌ 서버 URL과 토큰을 입력해주세요.', 'log-error');
+                return;
+            }
 
-        const socket = new SockJS('http://localhost:8080/ws');
-        stompClient = Stomp.over(socket);
+            this.updateConnectionStatus('connecting', '연결 중...');
+            this.addLog(`🔄 연결 시도: ${serverUrl}?token=${token}`, 'log-info');
 
-        // STOMP 디버그 로그 비활성화
-        stompClient.debug = function(str) {
-            console.log('STOMP: ' + str);
-        };
+            // SockJS + STOMP 연결
+            const socket = new SockJS(`${serverUrl}?token=${token}`);
+            this.stompClient = Stomp.over(socket);
 
-        stompClient.connect({}, function(frame) {
-            console.log('✅ 연결 성공: ' + frame);
-            updateStatus('🟢 연결됨 - 뉴스 수신 대기중', 'connected');
-            connectionStartTime = new Date();
-            updateConnectionTime();
+            // STOMP 디버깅 비활성화
+            this.stompClient.debug = null;
 
-            // /ws/news 토픽 구독
-            stompClient.subscribe('/ws/news', function(message) {
-                console.log('📨 메시지 받음:', message);
-                try {
-                    const newsData = JSON.parse(message.body);
-                    showNewsMessage(newsData);
-                } catch (e) {
-                    console.error('❌ JSON 파싱 오류:', e);
-                    showMessage('오류: JSON 파싱 실패 - ' + message.body, 'error');
-                }
+            this.stompClient.connect(
+                {}, // headers
+                (frame) => this.onConnected(frame),
+                (error) => this.onError(error)
+            );
+        }
+
+        onConnected(frame) {
+            this.connected = true;
+            this.updateConnectionStatus('connected', '연결됨');
+            this.addLog('✅ WebSocket 연결 성공!', 'log-success');
+
+            // 뉴스 구독
+            this.stompClient.subscribe('/ws/news', (message) => {
+                this.onNewsReceived(JSON.parse(message.body));
             });
 
-            // 연결 후 첫 메시지 표시
-            clearMessages();
-            showMessage('🎉 WebSocket 연결 완료! 실시간 뉴스를 기다리고 있습니다.', 'info');
+            this.addLog('📡 뉴스 채널 구독 완료: /ws/news', 'log-success');
 
-        }, function(error) {
-            console.error('❌ 연결 실패:', error);
-            updateStatus('🔴 연결 실패: ' + error, 'disconnected');
-            showMessage('❌ 연결 실패: ' + error, 'error');
-        });
-    }
+            document.getElementById('connectBtn').disabled = true;
+            document.getElementById('disconnectBtn').disabled = false;
+        }
 
-    function disconnect() {
-        if (stompClient !== null) {
-            stompClient.disconnect(function() {
-                console.log('🔌 연결 해제됨');
-                updateStatus('🔴 연결 해제됨', 'disconnected');
-                connectionStartTime = null;
-                updateConnectionTime();
-                showMessage('🔌 WebSocket 연결이 해제되었습니다.', 'info');
-            });
+        onError(error) {
+            this.connected = false;
+            this.updateConnectionStatus('disconnected', '연결 실패');
+            this.addLog(`❌ 연결 실패: ${error}`, 'log-error');
+
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('disconnectBtn').disabled = true;
+        }
+
+        disconnect() {
+            if (this.stompClient && this.connected) {
+                this.stompClient.disconnect(() => {
+                    this.addLog('👋 STOMP 연결이 해제되었습니다.', 'log-info');
+                });
+            }
+
+            // WebSocket 소켓 자체를 강제 종료
+            if (this.socket) {
+                this.socket.close();
+                this.addLog('🔌 WebSocket 소켓이 완전히 해제되었습니다.', 'log-info');
+            }
+
+            this.connected = false;
+            this.stompClient = null;
+            this.socket = null;
+
+            this.updateConnectionStatus('disconnected', '연결되지 않음');
+
+            // 연결하기 버튼 표시하고 연결해제 버튼 비활성화
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('disconnectBtn').disabled = true;
+        }
+
+        onNewsReceived(news) {
+            this.newsCount++;
+            this.updateNewsCounter();
+            this.displayNews(news);
+            this.addLog(`📰 뉴스 수신: ${news.id}`, 'log-success');
+        }
+
+        displayNews(news) {
+            const newsContainer = document.getElementById('newsContainer');
+
+            // 첫 뉴스인 경우 안내 메시지 제거
+            if (this.newsCount === 1) {
+                newsContainer.innerHTML = '';
+            }
+
+            const newsItem = document.createElement('div');
+            newsItem.className = 'news-item';
+
+            const publishedTime = new Date(news.publishedAt).toLocaleString('ko-KR');
+
+            newsItem.innerHTML = `
+                    <h4>${news.title}</h4>
+                    <p>${news.content}</p>
+                    <div class="metadata">
+                        ID: ${news.id} | 발행시간: ${publishedTime}
+                    </div>
+                `;
+
+            // 새 뉴스를 맨 위에 추가
+            newsContainer.insertBefore(newsItem, newsContainer.firstChild);
+
+            // 뉴스가 너무 많으면 오래된 것 제거 (최대 100개)
+            while (newsContainer.children.length > 100) {
+                newsContainer.removeChild(newsContainer.lastChild);
+            }
+
+            // 스크롤을 맨 위로 이동
+            newsContainer.scrollTop = 0;
+        }
+
+        clearNews() {
+            this.newsCount = 0;
+            this.updateNewsCounter();
+
+            const newsContainer = document.getElementById('newsContainer');
+            newsContainer.innerHTML = `
+                    <div class="no-news">
+                        🧹 뉴스 목록이 초기화되었습니다
+                    </div>
+                `;
+
+            this.addLog('🗑️ 뉴스 목록을 초기화했습니다.', 'log-info');
+        }
+
+        updateNewsCounter() {
+            document.getElementById('newsCounter').textContent = `받은 뉴스: ${this.newsCount}개`;
+        }
+
+        updateConnectionStatus(status, text) {
+            const statusElement = document.getElementById('connectionStatus');
+            const indicator = statusElement.querySelector('.status-indicator');
+            const textElement = statusElement.querySelector('span:last-child');
+
+            indicator.className = `status-indicator status-${status}`;
+            textElement.textContent = text;
+        }
+
+        addLog(message, className = 'log-info') {
+            const logs = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${className}`;
+
+            const timestamp = new Date().toLocaleTimeString('ko-KR');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+
+            logs.appendChild(logEntry);
+            logs.scrollTop = logs.scrollHeight;
+
+            // 로그가 너무 많으면 오래된 것 제거 (최대 50개)
+            while (logs.children.length > 50) {
+                logs.removeChild(logs.firstChild);
+            }
         }
     }
 
-    function showNewsMessage(newsData) {
-        messageCount++;
-        const timestamp = new Date().toLocaleTimeString('ko-KR');
+    // 애플리케이션 초기화
+    document.addEventListener('DOMContentLoaded', () => {
+        const client = new NewsWebSocketClient();
 
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message';
-        messageDiv.innerHTML = `
-                <div class="message-header">
-                    📰 [${timestamp}] 뉴스 ID: ${newsData.id || 'N/A'}
-                </div>
-                <div class="message-body">
-                    <strong>제목:</strong> ${newsData.title || 'N/A'}<br>
-                    <strong>내용:</strong> ${newsData.body || newsData.content || 'N/A'}<br>
-                    <strong>발행시간:</strong> ${newsData.publishedAt || 'N/A'}
-                </div>
-            `;
-
-        messagesDiv.appendChild(messageDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-        // 통계 업데이트
-        updateStats(timestamp);
-    }
-
-    function showMessage(message, type = 'info') {
-        const timestamp = new Date().toLocaleTimeString('ko-KR');
-        const icon = type === 'error' ? '❌' : type === 'info' ? 'ℹ️' : '📨';
-
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message';
-        messageDiv.innerHTML = `
-                <div class="message-header">
-                    ${icon} [${timestamp}] 시스템 메시지
-                </div>
-                <div class="message-body">${message}</div>
-            `;
-
-        messagesDiv.appendChild(messageDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    function updateStats(lastReceived) {
-        messageCountSpan.textContent = messageCount;
-        lastReceivedSpan.textContent = lastReceived || '-';
-    }
-
-    function updateConnectionTime() {
-        if (connectionStartTime) {
-            const now = new Date();
-            const diff = Math.floor((now - connectionStartTime) / 1000);
-            const minutes = Math.floor(diff / 60);
-            const seconds = diff % 60;
-            connectionTimeSpan.textContent = `${minutes}분 ${seconds}초`;
-        } else {
-            connectionTimeSpan.textContent = '-';
-        }
-    }
-
-    function clearMessages() {
-        messagesDiv.innerHTML = '';
-        messageCount = 0;
-        updateStats();
-    }
-
-    // 1초마다 연결 시간 업데이트
-    setInterval(updateConnectionTime, 1000);
-
-    // 페이지 로드 시 자동 연결
-    window.onload = function() {
-        console.log('🚀 페이지 로드됨 - 자동 연결 시작');
-        setTimeout(connect, 1000); // 1초 후 자동 연결
-    };
-
-    // 페이지 언로드 시 연결 해제
-    window.onbeforeunload = function() {
-        if (stompClient !== null) {
-            disconnect();
-        }
-    };
+        // 페이지 로드 시 환영 메시지
+        client.addLog('🎉 뉴스 브로드캐스팅 테스트 클라이언트가 시작되었습니다.', 'log-success');
+        client.addLog('💡 서버 URL과 토큰을 확인한 후 연결 버튼을 클릭하세요.', 'log-info');
+    });
 </script>
 </body>
 </html>
