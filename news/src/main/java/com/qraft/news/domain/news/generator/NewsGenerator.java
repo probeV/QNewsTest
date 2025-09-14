@@ -47,6 +47,7 @@ public class NewsGenerator {
                     newsNum++;
 
                     if(newsNum == 50) {
+                        log.info("뉴스 50개 생성 완료 : 30초 후 재시작");
                         newsNum = 0;
                         Thread.sleep(30000);
                     }

@@ -17,12 +17,12 @@ public class NewsProcessorService {
     public void processNews(String newsId) {
         try {
             String threadName = Thread.currentThread().getName();
-            log.info("[{}] 뉴스 처리 시작: {}", threadName, newsId);
+            //log.info("[{}] 뉴스 처리 시작: {}", threadName, newsId);
 
             // 실제 처리 로직
             newsService.broadCastNews(newsId);
 
-            log.info("[{}] 뉴스 처리 완료: {}", threadName, newsId);
+            //log.info("[{}] 뉴스 처리 완료: {}", threadName, newsId);
         } catch (Exception e) {
             log.error("뉴스 처리 실패: {}", newsId, e);
         }

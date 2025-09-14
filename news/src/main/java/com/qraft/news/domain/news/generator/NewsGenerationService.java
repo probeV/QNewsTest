@@ -29,8 +29,8 @@ public class NewsGenerationService {
             NewsRequestDto newsRequestDto = createNews();
             newsService.addNews(newsRequestDto);
 
-            log.info("[{}] 뉴스 생성 완료: {}",
-                    threadName, newsRequestDto.getId());
+            //log.info("[{}] 뉴스 생성 완료: {}",
+            //        threadName, newsRequestDto.getId());
         } catch (Exception e){
             log.error("뉴스 생성 실패");
         }
