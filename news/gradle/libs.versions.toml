@@ -8,6 +8,7 @@ h2 = "2.3.232"
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-starter-websocket = { module = "org.springframework.boot:spring-boot-starter-websocket" }
 lombok = { module = "org.projectlombok:lombok", version.ref = "lombok" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 h2 = { module = "com.h2database:h2", version.ref = "h2" }

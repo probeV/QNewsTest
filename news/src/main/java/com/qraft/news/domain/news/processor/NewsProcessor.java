@@ -30,7 +30,7 @@ public class NewsProcessor {
 
     // consumer 실행
     @EventListener(ApplicationReadyEvent.class)
-    public void startSingleProcessor() {
+    public void startSingleConsumer() {
         Thread consumerThread = new Thread(this::startProcessor, "ConsumerThread");
         consumerThread.setDaemon(true);
         consumerThread.start();

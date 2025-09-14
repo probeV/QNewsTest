@@ -38,7 +38,6 @@ public class NewsGenerationService {
 
     public NewsRequestDto createNews() {
         String threadName = Thread.currentThread().getName();
-        LocalDateTime now = LocalDateTime.now();
         long sequence = counter.incrementAndGet();
 
         return new NewsRequestDto(

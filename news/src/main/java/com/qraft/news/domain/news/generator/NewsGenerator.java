@@ -51,6 +51,7 @@ public class NewsGenerator {
                         Thread.sleep(30000);
                     }
                 } catch (InterruptedException e){
+                    Thread.currentThread().interrupt();
                     break;
                 }
         }
