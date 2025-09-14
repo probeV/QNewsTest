@@ -28,9 +28,4 @@ public class Customer {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "last_connected_at")
-    private LocalDateTime lastConnectedAt;
-
-
-
 }
