@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Qraft 뉴스 WebSocket 테스트</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .connecting { background-color: #fff3cd; color: #856404; }
+        .messages {
+            border: 1px solid #ddd;
+            height: 400px;
+            overflow-y: scroll;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 8px;
+            border-left: 3px solid #007bff;
+            background-color: white;
+        }
+        .message-header {
+            font-weight: bold;
+            color: #007bff;
+            font-size: 0.9em;
+        }
+        .message-body { margin-top: 5px; }
+        .controls { margin: 10px 0; }
+        .controls button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-connect { background-color: #28a745; color: white; }
+        .btn-disconnect { background-color: #dc3545; color: white; }
+        .btn-clear { background-color: #6c757d; color: white; }
+        .stats {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+<h1>🔔 Qraft 뉴스 실시간 알림 테스트</h1>
+
+<div id="status" class="status disconnected">🔴 연결 안됨</div>
+
+<div class="controls">
+    <button class="btn-connect" onclick="connect()">🔌 연결</button>
+    <button class="btn-disconnect" onclick="disconnect()">❌ 연결 해제</button>
+    <button class="btn-clear" onclick="clearMessages()">🗑️ 메시지 지우기</button>
+</div>
+
+<div class="stats">
+    <strong>📊 통계:</strong>
+    받은 메시지: <span id="messageCount">0</span>개 |
+    연결 시간: <span id="connectionTime">-</span> |
+    마지막 수신: <span id="lastReceived">-</span>
+</div>
+
+<div>
+    <h3>📨 받은 뉴스 메시지:</h3>
+    <div id="messages" class="messages">
+        <div style="color: #6c757d; text-align: center; padding: 20px;">
+            아직 받은 메시지가 없습니다. 연결 후 뉴스를 기다려주세요.
+        </div>
+    </div>
+</div>
+
+<script>
+    let stompClient = null;
+    let messageCount = 0;
+    let connectionStartTime = null;
+
+    const statusDiv = document.getElementById('status');
+    const messagesDiv = document.getElementById('messages');
+    const messageCountSpan = document.getElementById('messageCount');
+    const connectionTimeSpan = document.getElementById('connectionTime');
+    const lastReceivedSpan = document.getElementById('lastReceived');
+
+    function updateStatus(status, className) {
+        statusDiv.textContent = status;
+        statusDiv.className = 'status ' + className;
+    }
+
+    function connect() {
+        console.log('🔄 연결 시도 중...');
+        updateStatus('🟡 연결 중...', 'connecting');
+
+        const socket = new SockJS('http://localhost:8080/ws');
+        stompClient = Stomp.over(socket);
+
+        // STOMP 디버그 로그 비활성화
+        stompClient.debug = function(str) {
+            console.log('STOMP: ' + str);
+        };
+
+        stompClient.connect({}, function(frame) {
+            console.log('✅ 연결 성공: ' + frame);
+            updateStatus('🟢 연결됨 - 뉴스 수신 대기중', 'connected');
+            connectionStartTime = new Date();
+            updateConnectionTime();
+
+            // /ws/news 토픽 구독
+            stompClient.subscribe('/ws/news', function(message) {
+                console.log('📨 메시지 받음:', message);
+                try {
+                    const newsData = JSON.parse(message.body);
+                    showNewsMessage(newsData);
+                } catch (e) {
+                    console.error('❌ JSON 파싱 오류:', e);
+                    showMessage('오류: JSON 파싱 실패 - ' + message.body, 'error');
+                }
+            });
+
+            // 연결 후 첫 메시지 표시
+            clearMessages();
+            showMessage('🎉 WebSocket 연결 완료! 실시간 뉴스를 기다리고 있습니다.', 'info');
+
+        }, function(error) {
+            console.error('❌ 연결 실패:', error);
+            updateStatus('🔴 연결 실패: ' + error, 'disconnected');
+            showMessage('❌ 연결 실패: ' + error, 'error');
+        });
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.disconnect(function() {
+                console.log('🔌 연결 해제됨');
+                updateStatus('🔴 연결 해제됨', 'disconnected');
+                connectionStartTime = null;
+                updateConnectionTime();
+                showMessage('🔌 WebSocket 연결이 해제되었습니다.', 'info');
+            });
+        }
+    }
+
+    function showNewsMessage(newsData) {
+        messageCount++;
+        const timestamp = new Date().toLocaleTimeString('ko-KR');
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+        messageDiv.innerHTML = `
+                <div class="message-header">
+                    📰 [${timestamp}] 뉴스 ID: ${newsData.id || 'N/A'}
+                </div>
+                <div class="message-body">
+                    <strong>제목:</strong> ${newsData.title || 'N/A'}<br>
+                    <strong>내용:</strong> ${newsData.body || newsData.content || 'N/A'}<br>
+                    <strong>발행시간:</strong> ${newsData.publishedAt || 'N/A'}
+                </div>
+            `;
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+        // 통계 업데이트
+        updateStats(timestamp);
+    }
+
+    function showMessage(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString('ko-KR');
+        const icon = type === 'error' ? '❌' : type === 'info' ? 'ℹ️' : '📨';
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+        messageDiv.innerHTML = `
+                <div class="message-header">
+                    ${icon} [${timestamp}] 시스템 메시지
+                </div>
+                <div class="message-body">${message}</div>
+            `;
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function updateStats(lastReceived) {
+        messageCountSpan.textContent = messageCount;
+        lastReceivedSpan.textContent = lastReceived || '-';
+    }
+
+    function updateConnectionTime() {
+        if (connectionStartTime) {
+            const now = new Date();
+            const diff = Math.floor((now - connectionStartTime) / 1000);
+            const minutes = Math.floor(diff / 60);
+            const seconds = diff % 60;
+            connectionTimeSpan.textContent = `${minutes}분 ${seconds}초`;
+        } else {
+            connectionTimeSpan.textContent = '-';
+        }
+    }
+
+    function clearMessages() {
+        messagesDiv.innerHTML = '';
+        messageCount = 0;
+        updateStats();
+    }
+
+    // 1초마다 연결 시간 업데이트
+    setInterval(updateConnectionTime, 1000);
+
+    // 페이지 로드 시 자동 연결
+    window.onload = function() {
+        console.log('🚀 페이지 로드됨 - 자동 연결 시작');
+        setTimeout(connect, 1000); // 1초 후 자동 연결
+    };
+
+    // 페이지 언로드 시 연결 해제
+    window.onbeforeunload = function() {
+        if (stompClient !== null) {
+            disconnect();
+        }
+    };
+</script>
+</body>
+</html>
