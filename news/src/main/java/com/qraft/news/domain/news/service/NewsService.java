@@ -24,18 +24,6 @@ public interface NewsService {
      */
     public String getNewsId();
 
-
-    /**
-     * 큐에서 뉴스 ID를 가져와 브로드캐스트 처리 (SQS 전환 시 사용 x)
-     *
-     * 스케줄러에서 호출하여 큐 처리
-     *
-     * 1. 큐에서 뉴스 ID 하나 가져옴
-     * 2. 가져온 ID가 있으면 브로드캐스트 실행
-     * 3. 큐가 비어있으면 아무것도 하지 않음
-     */
-    public void processNews();
-
     /**
      * 뉴스 ID로 DB에서 뉴스 상세 정보 조회
      *

@@ -37,13 +37,6 @@ public class NewsServiceImpl implements NewsService {
         return queue.poll();
     }
 
-    public void processNews(){
-        // queue에 ID가 있을 때
-        String newsId = getNewsId();
-        broadCastNews(newsId);
-    }
-
-
 
     public NewsResponseDto getNews(String newsId) {
         TranslatedNews translatedNews = newsRepository.findById(newsId);
