@@ -29,24 +29,35 @@ public class NewsServiceImpl implements NewsService {
     private final NewsRepository newsRepository;
 
     public void addNews(NewsRequestDto newsRequestDto) {
-        newsRepository.save(newsRequestDto.toEntity());
-        queue.add(newsRequestDto.getId());
+        try{
+            newsRepository.save(newsRequestDto.toEntity());
+            queue.add(newsRequestDto.getId());
+        } catch (Exception e){
+            log.error("DB 저장 실패 - 뉴스 ID: {}, 오류: {}", newsRequestDto.getId(), e.getMessage(), e);
+        }
     }
 
     public String getNewsId() {
         return queue.poll();
     }
 
-
-    public NewsResponseDto getNews(String newsId) {
+    public NewsResponseDto getNews(String newsId) throws Exception{
         TranslatedNews translatedNews = newsRepository.findById(newsId);
+
+        if (translatedNews == null) {
+            throw new Exception("뉴스를 찾을 수 없습니다: " + newsId);
+        }
 
         return new NewsResponseDto(translatedNews);
     }
 
     public void broadCastNews(String newsId) {
-        NewsResponseDto newsResponseDto = getNews(newsId);
+        try {
+            NewsResponseDto newsResponseDto = getNews(newsId);
+            simpMessagingTemplate.convertAndSend("/ws/news", newsResponseDto);
 
-        simpMessagingTemplate.convertAndSend("/ws/news", newsResponseDto);
+        } catch (Exception e) {
+            log.error("DB에서 뉴스 조회 실패 - 뉴스 ID: {}, 오류: {}", newsId, e.getMessage(), e);
+        }
     }
 }
